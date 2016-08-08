@@ -1,3 +1,4 @@
+import getpass
 import argparse
 import requests
 import sys
@@ -136,21 +137,19 @@ def fmfSetLoc(DSID, mmeFMFAppToken, UDID, latitude, longitude): #we need UDID. a
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog='FMFLocationChanger')
-    parser.add_argument("appleID", type=str, default=None, help="Apple ID")
-    parser.add_argument("password", type=str, default=None, help="password")
     parser.add_argument("UDID", type=str, default=None, help="Unique Device Identifier")
     parser.add_argument("latitude", type=float, default=None, help="latitude")
     parser.add_argument("longitude", type=float, default=None, help="longitude")
     parser.add_argument("serviceSelect", type=int, default=None, help="0 for both, 1 for just FMF, 2 for just FMI")
     args = parser.parse_args()
 
-    user = args.appleID
+    user = raw_input("Apple ID: ")
     try: #in the event we are supplied with an DSID, convert it to an int
         int(user)
         user = int(user)
-    except ValueError:
+    except ValueError: #otherwise we have an apple id and can not convert
         pass
-    passw = args.password
+    passw = getpass.getpass()
     latitude = args.latitude
     longitude = args.longitude
     UDID = args.UDID
