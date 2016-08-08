@@ -1,9 +1,9 @@
 # Poof!
 Poof will change the location of your iOS device on Find my Friends to anywhere in the world!
 
-**A poof of concept to make you go poof!**
+**A poof of concept to make you go poof**
 
-To use Poof: ***python poof.py appleID password UDID latitude longitude***
+To use Poof: *python poof.py appleID password UDID latitude longitude*
 
 Apple does not appear to store UDID information as of iOS 9, so currently, you have to manually enter the UDID of the device that you want to spoof location data for. If you do not have or do not want to use your appleID / password, you can also use a MobileMeAuthToken.
 
