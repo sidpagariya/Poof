@@ -24,7 +24,8 @@ def tokenFactory(dsid, mmeAuthToken):
     #staple it together & call it bad weather
     content = response.text
     mmeFMFAppToken = plistlib.readPlistFromString(content)["tokens"]["mmeFMFAppToken"]
-    return mmeFMFAppToken
+    mmeFMIToken = plistlib.readPlistFromString(content)["tokens"]["mmeFMIPToken"]
+    return (mmeFMFAppToken, mmeFMIToken)
 
 def dsidFactory(uname, passwd): #can also be a regular DSID with AuthToken
     creds = base64.b64encode("%s:%s" % (uname, passwd))
@@ -49,8 +50,45 @@ def dsidFactory(uname, passwd): #can also be a regular DSID with AuthToken
     DSID = int(plistlib.readPlistFromString(content)["appleAccountInfo"]["dsPrsID"]) #stitch our own auth DSID
     mmeAuthToken = plistlib.readPlistFromString(content)["tokens"]["mmeAuthToken"] #stitch with token
     return (DSID, mmeAuthToken)
+
+def fmiSetLoc(DSID, mmeFMIToken, UDID, latitude, longitude):
+    mmeFMITokenEncoded = base64.b64encode("%s:%s" % (DSID, mmeFMIToken))
+    url = 'https://p04-fmip.icloud.com/fmipservice/findme/%s/%s/currentLocation' % (DSID, UDID)
+    headers = {
+        'Authorization': 'Basic %s' % mmeFMITokenEncoded,
+        'X-Apple-PrsId': '%s' % DSID,
+        'Accept-Encoding': 'gzip, deflate',
+        'Content-Type': 'application/json',
+        'User-Agent': 'FMDClient/6.0 iPhone6,1/13F69',
+        'X-Apple-Find-API-Ver': '6.0',
+    }
+    json = {
+        "locationFinished": False,
+        "deviceInfo": {
+            "batteryStatus": "NotCharging",
+            "udid": UDID,
+            "batteryLevel": 0.50, #we set to 50% (arbitrary number)
+            "isChargerConnected": False
+        },
+        "longitude": longitude,
+        "reason": 1,
+        "horizontalAccuracy": 65,
+        "latitude": latitude,
+        "deviceContext": {
+        },
+    }
+    response = requests.request(
+        method='POST',
+        url=url,
+        headers=headers,
+        json=json,
+    )
+    if response.status_code != 200:
+        return "Error changing FindMyiPhone location, status code <%s>!" % response.status_code
+    else:
+        return "Successfully changed FindMyiPhone location to <%s;%s>!" % (latitude, longitude)
     
-def setLoc(DSID, mmeFMFAppToken, UDID, latitude, longitude): #we need UDID. apple does not appear to store this information, so for now, we have to do it automatically.
+def fmfSetLoc(DSID, mmeFMFAppToken, UDID, latitude, longitude): #we need UDID. apple does not appear to store this information, so for now, we have to do it automatically.
     mmeFMFAppTokenEncoded = base64.b64encode("%s:%s" % (DSID, mmeFMFAppToken))
     url = 'https://p04-fmfmobile.icloud.com/fmipservice/friends/%s/%s/myLocationChanged' % (DSID, UDID)
     headers = {
@@ -92,9 +130,9 @@ def setLoc(DSID, mmeFMFAppToken, UDID, latitude, longitude): #we need UDID. appl
         json=json,
     )
     if response.status_code != 200:
-        return "Error changing location, status code <%s>!" % response.status_code
+        return "Error changing FindMyFriends location, status code <%s>!" % response.status_code
     else:
-        return "Successfully changed location to <%s;%s>!" % (latitude, longitude)
+        return "Successfully changed FindMyFriends location to <%s;%s>!" % (latitude, longitude)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog='FMFLocationChanger')
@@ -102,7 +140,8 @@ if __name__ == '__main__':
     parser.add_argument("password", type=str, default=None, help="password")
     parser.add_argument("UDID", type=str, default=None, help="Unique Device Identifier")
     parser.add_argument("latitude", type=float, default=None, help="latitude")
-    parser.add_argument("longitude", type=float, default=None, help="longitude")    
+    parser.add_argument("longitude", type=float, default=None, help="longitude")
+    parser.add_argument("serviceSelect", type=int, default=None, help="0 for both, 1 for just FMF, 2 for just FMI")
     args = parser.parse_args()
 
     user = args.appleID
@@ -115,21 +154,48 @@ if __name__ == '__main__':
     latitude = args.latitude
     longitude = args.longitude
     UDID = args.UDID
+    serviceSelect = args.serviceSelect #default to spoofing both
 
     try:
         (DSID, authToken) = dsidFactory(user, passw)
     except:
         print "Error getting DSID and MMeAuthToken!\n%s" % dsidFactory(user, passw)
         sys.exit()
+
     try:
-        mmeFMFAppToken = tokenFactory(DSID, authToken) #get tokens by using token.
+        mmeFMFAppToken = tokenFactory(DSID, authToken)[0] #get tokens by using token.
     except:
-        print "Error getting mmeFMFAppToken!\n%s" % tokenFactory(DSID, authToken)
+        print "Error getting mmeFMFAppToken!\n%s" % tokenFactory(DSID, authToken)[0] #0 is the FMFAppToken
         sys.exit()
+
+    try:
+        mmeFMIToken = tokenFactory(DSID, authToken)[1]
+    except:
+        print "Error getting mmeFMIToken!\n%s" % tokenFactory(DSID, authToken)[1]
+        sys.exit()
+
     try:
         while True:
-            print setLoc(DSID, mmeFMFAppToken, UDID, latitude, longitude)
-            os.system("sleep 30") #wait 30 seconds before going again.
+            if serviceSelect == 0 or serviceSelect == 1 or serviceSelect == 2:
+                if serviceSelect == 0: #do both
+                    print fmiSetLoc(DSID, mmeFMIToken, UDID, latitude, longitude)
+                    print fmfSetLoc(DSID, mmeFMFAppToken, UDID, latitude, longitude)
+                    print "Waiting 5 seconds to send FMI/FMF spoof again."
+                    os.system("sleep 5") #wait 30 seconds before going again.
+                elif serviceSelect == 1:
+                    print fmfSetLoc(DSID, mmeFMFAppToken, UDID, latitude, longitude)
+                    print "Waiting 5 seconds to send FMF spoof again."
+                    os.system("sleep 5")
+                else: #serviceSelect is 2, wants FMI only.
+                    print fmiSetLoc(DSID, mmeFMIToken, UDID, latitude, longitude)
+                    print "Waiting 5 seconds to send FMI spoof again."
+                    os.system("sleep 5")
+            else:
+                print "Service select must have a value of 0, 1, or 2."
+                sys.exit()
+    except KeyboardInterrupt:
+        print "Ctrl-C. Stopping."
+        sys.exit()
     except Exception, e:
         print e
         sys.exit()
