@@ -5,6 +5,24 @@ import sys
 import base64
 import os
 import plistlib
+import json
+
+def resetLocation(self):
+    url = "http://freegeoip.net/json/"
+    headers = {
+        'Content-Type': 'application/json',
+    }
+    response = requests.request(
+        method='GET',
+        headers=headers,
+        url=url,
+    )
+    geoIP = json.loads(response.content)
+    try:
+        (latitude, longitude, IP) = (geoIP["latitude"], geoIP["longitude"], geoIP["ip"])
+        return (latitude, longitude, IP)
+    except Exception, e:
+        return ("Error resetting location: %s" % e, 0, 0)
 
 def tokenFactory(dsid, mmeAuthToken):
     mmeAuthTokenEncoded = base64.b64encode("%s:%s" % (dsid, mmeAuthToken))
@@ -194,7 +212,22 @@ if __name__ == '__main__':
                 sys.exit()
     except KeyboardInterrupt:
         print "Ctrl-C. Stopping."
-        sys.exit()
+        print "Resetting location to approximate Wi-Fi AP latitude and longitude"
+        try:
+            (latitude, longitude, IP) = resetLocation("")
+            if serviceSelect == 0: #do both
+                print fmiSetLoc(DSID, mmeFMIToken, UDID, latitude, longitude)
+                print fmfSetLoc(DSID, mmeFMFAppToken, UDID, latitude, longitude)
+                print "Reset location to <%s:%s> based on IP %s." % (latitude, longitude, IP)
+            elif serviceSelect == 1:
+                print fmfSetLoc(DSID, mmeFMFAppToken, UDID, latitude, longitude)
+                print "Reset location to <%s:%s> based on IP %s." % (latitude, longitude, IP)
+            else:
+                print fmiSetLoc(DSID, mmeFMIToken, UDID, latitude, longitude)
+                print "Reset location to <%s:%s> based on IP %s." % (latitude, longitude, IP)
+            sys.exit()
+        except Exception, e:
+            print "Error resetting location.\n%s\n" % e
     except Exception, e:
         print e
         sys.exit()
