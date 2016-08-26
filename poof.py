@@ -1,12 +1,10 @@
 import getpass
-import argparse
 import requests
 import sys
 import base64
-import os
 import plistlib
-import json
 import traceback
+import json
 
 def resetLocation(self):
     url = "http://freegeoip.net/json/"
@@ -170,7 +168,7 @@ if __name__ == '__main__':
     while True:
         try:
             serviceSelect = int(raw_input("Spoof FMF, FMI, or both: [0, 1, 2] "))
-            if not (1 <= serviceSelect <= 3):
+            if not (0 <= serviceSelect <= 2):
                 raise ValueError()
             break
         except ValueError:
@@ -201,15 +199,15 @@ if __name__ == '__main__':
                     print fmiSetLoc(DSID, mmeFMIToken, UDID, latitude, longitude)
                     print fmfSetLoc(DSID, mmeFMFAppToken, UDID, latitude, longitude)
                     print "Waiting 5 seconds to send FMI/FMF spoof again."
-                    os.system("sleep 5") #wait 30 seconds before going again.
+                    time.sleep("5") #wait 5 seconds before going again.
                 elif serviceSelect == 1:
                     print fmfSetLoc(DSID, mmeFMFAppToken, UDID, latitude, longitude)
                     print "Waiting 5 seconds to send FMF spoof again."
-                    os.system("sleep 5")
+                    time.sleep("5")
                 else: #serviceSelect is 2, wants FMI only.
                     print fmiSetLoc(DSID, mmeFMIToken, UDID, latitude, longitude)
                     print "Waiting 5 seconds to send FMI spoof again."
-                    os.system("sleep 5")
+                    time.sleep("5")
             else:
                 print "Service select must have a value of 0, 1, or 2."
                 sys.exit()
