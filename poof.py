@@ -6,6 +6,7 @@ import base64
 import os
 import plistlib
 import json
+import traceback
 
 def resetLocation(self):
     url = "http://freegeoip.net/json/"
@@ -77,7 +78,9 @@ def fmiSetLoc(DSID, mmeFMIToken, UDID, latitude, longitude):
         'Authorization': 'Basic %s' % mmeFMITokenEncoded,
         'X-Apple-PrsId': '%s' % DSID,
         'Accept-Encoding': 'gzip, deflate',
+        'Accept': '*/*',
         'Content-Type': 'application/json',
+        'Accept-Language': 'en-us',
         'User-Agent': 'FMDClient/6.0 iPhone6,1/13F69',
         'X-Apple-Find-API-Ver': '6.0',
     }
@@ -114,8 +117,10 @@ def fmfSetLoc(DSID, mmeFMFAppToken, UDID, latitude, longitude): #we need UDID. a
         'host': 'p04-fmfmobile.icloud.com',
         'Authorization': 'Basic %s' % mmeFMFAppTokenEncoded,
         'Content-Type': 'application/json; charset=utf-8',
+        'Accept': '*/*',
         'User-Agent': 'FindMyFriends/5.0 iPhone6,1/9.3.2(13F69)',
         'Accept-Encoding': 'gzip, deflate',
+        'Accept-Language': 'en-us',
         'X-Apple-Find-API-Ver': '2.0',
         'X-Apple-AuthScheme': 'Forever',
     }
@@ -128,8 +133,6 @@ def fmfSetLoc(DSID, mmeFMFAppToken, UDID, latitude, longitude): #we need UDID. a
             "appName": "FindMyFriends", #need for proper server response
             "appVersion": "5.0", #also need for proper server response
             "userInactivityTimeInMS": 5,
-            #"deviceClass": "iPhone",
-            #"productType": "iPhone6,1",
             "deviceUDID": "%s" % UDID, #This is quite important.
             "location": {
                 "altitude": 57, #random number. can change.
@@ -154,13 +157,6 @@ def fmfSetLoc(DSID, mmeFMFAppToken, UDID, latitude, longitude): #we need UDID. a
         return "Successfully changed FindMyFriends location to <%s;%s>!" % (latitude, longitude)
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(prog='FMFLocationChanger')
-    parser.add_argument("UDID", type=str, default=None, help="Unique Device Identifier")
-    parser.add_argument("latitude", type=float, default=None, help="latitude")
-    parser.add_argument("longitude", type=float, default=None, help="longitude")
-    parser.add_argument("serviceSelect", type=int, default=None, help="0 for both, 1 for just FMF, 2 for just FMI")
-    args = parser.parse_args()
-
     user = raw_input("Apple ID: ")
     try: #in the event we are supplied with an DSID, convert it to an int
         int(user)
@@ -168,11 +164,18 @@ if __name__ == '__main__':
     except ValueError: #otherwise we have an apple id and can not convert
         pass
     passw = getpass.getpass()
-    latitude = args.latitude
-    longitude = args.longitude
-    UDID = args.UDID
-    serviceSelect = args.serviceSelect #default to spoofing both
-
+    latitude = raw_input("Latitude: ")
+    longitude = raw_input("Longitude: ")
+    UDID = raw_input("UDID: ")
+    while True:
+        try:
+            serviceSelect = int(raw_input("Spoof FMF, FMI, or both: [1, 2, 3] "))
+            if not (1 <= serviceSelect <= 3):
+                raise ValueError()
+            break
+        except ValueError:
+            print "Please enter 1, 2 or 3 (FMF, FMI, or both, respectively)"
+            continue
     try:
         (DSID, authToken) = dsidFactory(user, passw)
     except:
@@ -230,4 +233,5 @@ if __name__ == '__main__':
             print "Error resetting location.\n%s\n" % e
     except Exception, e:
         print e
+        print traceback.print_exc()
         sys.exit()
