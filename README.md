@@ -1,7 +1,7 @@
 # Poof!
 Poof will change the location of your iOS device on Find my Friends and Find my iPhone to anywhere in the world!
 
-To use Poof: *python poof.py*
+**To use Poof:** *python poof.py*
 
 Poof allows you to spoof just FMF, just FMIP, or both.
 
