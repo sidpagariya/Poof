@@ -16,9 +16,9 @@ Password: secretPassword
 Latitude: 40.7484
 Longitude: -73.9857
 UDID: LongAndRandomUDID 
-Service Select: 3
+Service Select: 2
 
-This example will spoof the location of device with the UDID "LongAndRandomUDID" on the iCloud account "johndoe@apple.com" to 40.7484° N, 73.9857° W, which are the coordinates of the Empire State Building. 
+This example will spoof the location of device with the UDID "LongAndRandomUDID" on the iCloud account "johndoe@apple.com" to 40.7484° N, 73.9857° W, which are the coordinates of the Empire State Building, on both FMF and FMIP. 
 
 If you enter an invalid UDID, poof will not be able to verify if the location has been spoofed. So make sure that the UDID is valid.
 
