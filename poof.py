@@ -169,12 +169,12 @@ if __name__ == '__main__':
     UDID = raw_input("UDID: ")
     while True:
         try:
-            serviceSelect = int(raw_input("Spoof FMF, FMI, or both: [1, 2, 3] "))
+            serviceSelect = int(raw_input("Spoof FMF, FMI, or both: [0, 1, 2] "))
             if not (1 <= serviceSelect <= 3):
                 raise ValueError()
             break
         except ValueError:
-            print "Please enter 1, 2 or 3 (FMF, FMI, or both, respectively)"
+            print "Please enter 0, 1 or 2 (FMF, FMI, or both, respectively)"
             continue
     try:
         (DSID, authToken) = dsidFactory(user, passw)
