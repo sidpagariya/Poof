@@ -1,26 +1,32 @@
+import urllib2
 import getpass
-import requests
 import sys
 import base64
 import plistlib
 import traceback
 import json
+import time
 
 def resetLocation(self):
     url = "http://freegeoip.net/json/"
     headers = {
         'Content-Type': 'application/json',
     }
-    response = requests.request(
-        method='GET',
-        headers=headers,
-        url=url,
-    )
-    geoIP = json.loads(response.content)
+    request = urllib2.Request(url, None, headers)
+    response = None
+    try:
+        response = urllib2.urlopen(request)
+    except urllib2.HTTPError as e:
+        if e.code != 200:
+            return "HTTP Error: %s" % e.code
+        else:
+            print e
+            raise HTTPError
+    geoIP = json.loads(response.read())
     try:
         (latitude, longitude, IP) = (geoIP["latitude"], geoIP["longitude"], geoIP["ip"])
         return (latitude, longitude, IP)
-    except Exception, e:
+    except Exception as e:
         return ("Error resetting location: %s" % e, 0, 0)
 
 def tokenFactory(dsid, mmeAuthToken):
@@ -32,15 +38,19 @@ def tokenFactory(dsid, mmeAuthToken):
         'Content-Type': 'application/xml',
         'X-MMe-Client-Info': '<iPhone6,1> <iPhone OS;9.3.2;13F69> <com.apple.AppleAccount/1.0 (com.apple.Preferences/1.0)>'
     }
-    response = requests.request(
-        method='POST',
-        url=url,
-        headers = headers,
-    )
-    if response.status_code != 200:
-        return "HTTP Error: %s" % response.status_code
+
+    request = urllib2.Request(url, None, headers)
+    response = None
+    try:
+        response = urllib2.urlopen(request)
+    except urllib2.HTTPError as e:
+        if e.code != 200:
+            return "HTTP Error: %s" % e.code
+        else:
+            print e
+            raise HTTPError
     #staple it together & call it bad weather
-    content = response.text
+    content = response.read()
     mmeFMFAppToken = plistlib.readPlistFromString(content)["tokens"]["mmeFMFAppToken"]
     mmeFMIToken = plistlib.readPlistFromString(content)["tokens"]["mmeFMIPToken"]
     return (mmeFMFAppToken, mmeFMIToken)
@@ -52,19 +62,23 @@ def dsidFactory(uname, passwd): #can also be a regular DSID with AuthToken
         'Authorization': 'Basic %s' % creds,
         'Content-Type': 'application/xml',
     }
-    response = requests.request(
-        method='POST',
-        url=url,
-        headers=headers,
-    )
-    if response.status_code != 200:
-        if response.status_code == 401:
-            return "HTTP Error 401: Unauthorized. Are you sure the credentials are correct?"
-        elif response.status_code == 409:
-            return "HTTP Error 409: Conflict. 2 Factor Authentication appears to be enabled. You cannot use this script unless you get the your MMeAuthToken (generated either on your computer or your phone)."
+
+    request = urllib2.Request(url, None, headers)
+    response = None
+    try:
+        response = urllib2.urlopen(request)
+    except urllib2.HTTPError as e:
+        if e.code != 200:
+            if e.code == 401:
+                return "HTTP Error 401: Unauthorized. Are you sure the credentials are correct?"
+            elif e.code == 409:
+                return "HTTP Error 409: Conflict. 2 Factor Authentication appears to be enabled. You cannot use this script unless you get the your MMeAuthToken (generated either on your computer or your phone)."
+            else:
+                return "HTTP Error %s.\n" % e.code
         else:
-            return "HTTP Error %s.\n" % response.status_code
-    content = response.text
+            print e
+            raise HTTPError
+    content = response.read()
     DSID = int(plistlib.readPlistFromString(content)["appleAccountInfo"]["dsPrsID"]) #stitch our own auth DSID
     mmeAuthToken = plistlib.readPlistFromString(content)["tokens"]["mmeAuthToken"] #stitch with token
     return (DSID, mmeAuthToken)
@@ -82,7 +96,7 @@ def fmiSetLoc(DSID, mmeFMIToken, UDID, latitude, longitude):
         'User-Agent': 'FMDClient/6.0 iPhone6,1/13F69',
         'X-Apple-Find-API-Ver': '6.0',
     }
-    json = {
+    data = {
         "locationFinished": False,
         "deviceInfo": {
             "batteryStatus": "NotCharging",
@@ -97,14 +111,16 @@ def fmiSetLoc(DSID, mmeFMIToken, UDID, latitude, longitude):
         "deviceContext": {
         },
     }
-    response = requests.request(
-        method='POST',
-        url=url,
-        headers=headers,
-        json=json,
-    )
-    if response.status_code != 200:
-        return "Error changing FindMyiPhone location, status code <%s>!" % response.status_code
+    jsonData = json.dumps(data)
+    request = urllib2.Request(url, jsonData, headers)
+    try:
+        response = urllib2.urlopen(request)
+    except urllib2.HTTPError as e:
+        if e.code != 200:
+            return "Error changing FindMyiPhone location, status code <%s>!" % e.code
+        else:
+            print e
+            raise HTTPError
     else:
         return "Successfully changed FindMyiPhone location to <%s;%s>!" % (latitude, longitude)
     
@@ -122,7 +138,7 @@ def fmfSetLoc(DSID, mmeFMFAppToken, UDID, latitude, longitude): #we need UDID. a
         'X-Apple-Find-API-Ver': '2.0',
         'X-Apple-AuthScheme': 'Forever',
     }
-    json = {
+    data = {
         "serverContext": {
             "authToken": "%s" % mmeFMFAppToken,
             "prsId": DSID,
@@ -143,14 +159,16 @@ def fmfSetLoc(DSID, mmeFMFAppToken, UDID, latitude, longitude): #we need UDID. a
             }
         }
     }
-    response = requests.request(
-        method='POST',
-        url=url,
-        headers=headers,
-        json=json,
-    )
-    if response.status_code != 200:
-        return "Error changing FindMyFriends location, status code <%s>!" % response.status_code
+    jsonData = json.dumps(data)
+    request = urllib2.Request(url, jsonData, headers)
+    try:
+        response = urllib2.urlopen(request)
+    except urllib2.HTTPError as e:
+        if e.code != 200:
+            return "Error changing FindMyFriends location, status code <%s>!" % e.code
+        else:
+            print e
+            raise HTTPError
     else:
         return "Successfully changed FindMyFriends location to <%s;%s>!" % (latitude, longitude)
 
@@ -181,33 +199,28 @@ if __name__ == '__main__':
         sys.exit()
 
     try:
-        mmeFMFAppToken = tokenFactory(DSID, authToken)[0] #get tokens by using token.
-    except:
-        print "Error getting mmeFMFAppToken!\n%s" % tokenFactory(DSID, authToken)[0] #0 is the FMFAppToken
-        sys.exit()
-
-    try:
-        mmeFMIToken = tokenFactory(DSID, authToken)[1]
-    except:
-        print "Error getting mmeFMIToken!\n%s" % tokenFactory(DSID, authToken)[1]
+        mmeFMFAppToken, mmeFMIToken = tokenFactory(DSID, authToken) #get tokens by using token.
+    except Exception as e:
+        print "Error getting FMF/FMI tokens!\n%s" % e #0 is the FMFAppToken
+        traceback.print_exc()
         sys.exit()
 
     try:
         while True:
             if serviceSelect == 0 or serviceSelect == 1 or serviceSelect == 2:
                 if serviceSelect == 0: #do both
+                    print fmfSetLoc(DSID, mmeFMFAppToken, UDID, latitude, longitude)
+                    print "Waiting 5 seconds to send FMF spoof again."
+                    time.sleep(5)
+                elif serviceSelect == 1: #wants FMI
+                    print fmiSetLoc(DSID, mmeFMIToken, UDID, latitude, longitude)
+                    print "Waiting 5 seconds to send FMI spoof again."
+                    time.sleep(5)
+                else: #serviceSelect is 2, wants both.
                     print fmiSetLoc(DSID, mmeFMIToken, UDID, latitude, longitude)
                     print fmfSetLoc(DSID, mmeFMFAppToken, UDID, latitude, longitude)
                     print "Waiting 5 seconds to send FMI/FMF spoof again."
-                    time.sleep("5") #wait 5 seconds before going again.
-                elif serviceSelect == 1:
-                    print fmfSetLoc(DSID, mmeFMFAppToken, UDID, latitude, longitude)
-                    print "Waiting 5 seconds to send FMF spoof again."
-                    time.sleep("5")
-                else: #serviceSelect is 2, wants FMI only.
-                    print fmiSetLoc(DSID, mmeFMIToken, UDID, latitude, longitude)
-                    print "Waiting 5 seconds to send FMI spoof again."
-                    time.sleep("5")
+                    time.sleep(5) #wait 5 seconds before going again.
             else:
                 print "Service select must have a value of 0, 1, or 2."
                 sys.exit()
@@ -217,19 +230,19 @@ if __name__ == '__main__':
         try:
             (latitude, longitude, IP) = resetLocation("")
             if serviceSelect == 0: #do both
-                print fmiSetLoc(DSID, mmeFMIToken, UDID, latitude, longitude)
                 print fmfSetLoc(DSID, mmeFMFAppToken, UDID, latitude, longitude)
                 print "Reset location to <%s:%s> based on IP %s." % (latitude, longitude, IP)
             elif serviceSelect == 1:
-                print fmfSetLoc(DSID, mmeFMFAppToken, UDID, latitude, longitude)
+                print fmiSetLoc(DSID, mmeFMIToken, UDID, latitude, longitude)
                 print "Reset location to <%s:%s> based on IP %s." % (latitude, longitude, IP)
             else:
+                print fmfSetLoc(DSID, mmeFMIToken, UDID, latitude, longitude)
                 print fmiSetLoc(DSID, mmeFMIToken, UDID, latitude, longitude)
                 print "Reset location to <%s:%s> based on IP %s." % (latitude, longitude, IP)
             sys.exit()
-        except Exception, e:
+        except Exception as e:
             print "Error resetting location.\n%s\n" % e
-    except Exception, e:
+    except Exception as e:
         print e
         print traceback.print_exc()
         sys.exit()
