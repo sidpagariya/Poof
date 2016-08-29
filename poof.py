@@ -1,3 +1,4 @@
+import urllib
 import urllib2
 import getpass
 import sys
@@ -6,6 +7,26 @@ import plistlib
 import traceback
 import json
 import time
+
+def convertAddress(street, city, state):
+    street = street.replace(" ", "+") #replace all spaces with a +
+    city = city.replace(" ", "+")
+    url = "http://maps.google.com/maps/api/geocode/json?address=%s,+%s+%s" % (street, city, state)
+    headers = {
+        'Content-Type': 'application/json',
+    }
+    request = urllib2.Request(url, None, headers)
+    response = None
+    try:
+        response = urllib2.urlopen(request)
+    except urllib2.HTTPError as e:
+        if e.code != 200:
+            return "HTTP Error: %s" % e.code
+        else:
+            print e
+            raise HTTPError
+    coords = json.loads(response.read())["results"][0]["geometry"]["location"]
+    return (coords["lat"], coords["lng"])
 
 def resetLocation(self):
     url = "http://freegeoip.net/json/"
@@ -173,6 +194,15 @@ def fmfSetLoc(DSID, mmeFMFAppToken, UDID, latitude, longitude): #we need UDID. a
         return "Successfully changed FindMyFriends location to <%s;%s>!" % (latitude, longitude)
 
 if __name__ == '__main__':
+    while True:
+        try:
+            arg = int(raw_input("Would you like to use GPS coordinates [1] or a street address [2]: "))
+            if not (1 <= arg <= 2):
+                raise ValueError()
+            break
+        except ValueError:
+            print "Please enter 1 or 2 (GPS coordinates, or street address)"
+            continue
     user = raw_input("Apple ID: ")
     try: #in the event we are supplied with an DSID, convert it to an int
         int(user)
@@ -180,8 +210,19 @@ if __name__ == '__main__':
     except ValueError: #otherwise we have an apple id and can not convert
         pass
     passw = getpass.getpass()
-    latitude = raw_input("Latitude: ")
-    longitude = raw_input("Longitude: ")
+    latitude, longitude, street, city, state = (None, None, None, None, None)
+    if arg == 1:
+        latitude = raw_input("Latitude: ")
+        longitude = raw_input("Longitude: ")
+    if arg == 2:
+        street = raw_input("Street address: ")
+        city = raw_input("City: ")
+        state = raw_input("State: ")
+        (latitude, longitude) = convertAddress(street, city, state)
+        print "Got GPS coordinates <%s:%s> for %s, %s, %s" % (latitude, longitude, street, city, state)
+    #if not latitude or not longitude:
+    #    latitude = raw_input("Latitude: ")
+    #    longitude = raw_input("Longitude: ")
     UDID = raw_input("UDID: ")
     while True:
         try:
@@ -225,7 +266,7 @@ if __name__ == '__main__':
                 print "Service select must have a value of 0, 1, or 2."
                 sys.exit()
     except KeyboardInterrupt:
-        print "Ctrl-C. Stopping."
+        print "Terminate signal received. Stopping spoof."
         print "Resetting location to approximate Wi-Fi AP latitude and longitude"
         try:
             (latitude, longitude, IP) = resetLocation("")
@@ -236,7 +277,7 @@ if __name__ == '__main__':
                 print fmiSetLoc(DSID, mmeFMIToken, UDID, latitude, longitude)
                 print "Reset location to <%s:%s> based on IP %s." % (latitude, longitude, IP)
             else:
-                print fmfSetLoc(DSID, mmeFMIToken, UDID, latitude, longitude)
+                print fmfSetLoc(DSID, mmeFMFAppToken, UDID, latitude, longitude)
                 print fmiSetLoc(DSID, mmeFMIToken, UDID, latitude, longitude)
                 print "Reset location to <%s:%s> based on IP %s." % (latitude, longitude, IP)
             sys.exit()
