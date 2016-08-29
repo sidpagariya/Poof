@@ -22,8 +22,6 @@ This example will spoof the location of device with the UDID "LongAndRandomUDID"
 
 If you enter an invalid UDID, poof will not be able to verify if the location has been spoofed. So make sure that the UDID is valid.
 
-**NOTE**: Latitude coordinates that are north are positive (south are negative), and longitude coordinate that are west are negative (east are positive).
-
 Future features: 
 - [ ] Find the UDID of all devices linked to the iCloud account 
 - [ ] Find Friends of Friends - Basically the same as FMF, but this will find the friends of any iCloud account, with just a MMeAuthToken!
