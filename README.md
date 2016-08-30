@@ -9,6 +9,8 @@ Apple does not appear to store UDID information as of iOS 9, so currently, you h
 
 **Poof** will spoof your location every 5 seconds until you terminate the program. You can run it in the background and forget about it, or run it 24/7 on a device that can always be powered on, like the Raspberry Pi. You can run poof for years without it locking you out of your account, due to the way that poof retrieves authentication tokens.
 
+---
+
 **Example**: *python poof.py* 
 
 Username: johndoe@apple.com
@@ -26,6 +28,8 @@ Service Select: 2
 This example will spoof the location of device with the UDID "LongAndRandomUDID" on the iCloud account "johndoe@apple.com" to 40.7484° N, 73.9857° W, which are the coordinates of the Empire State Building, on both FMF and FMIP. 
 
 If you enter an invalid UDID, poof will not be able to verify if the location has been spoofed. So make sure that the UDID is valid.
+
+---
 
 Future features: 
 - [ ] Find the UDID of all devices linked to the iCloud account 
