@@ -12,10 +12,15 @@ Apple does not appear to store UDID information as of iOS 9, so currently, you h
 **Example**: *python poof.py* 
 
 Username: johndoe@apple.com
+
 Password: secretPassword
+
 Latitude: 40.7484
+
 Longitude: -73.9857
+
 UDID: LongAndRandomUDID 
+
 Service Select: 2
 
 This example will spoof the location of device with the UDID "LongAndRandomUDID" on the iCloud account "johndoe@apple.com" to 40.7484° N, 73.9857° W, which are the coordinates of the Empire State Building, on both FMF and FMIP. 
