@@ -93,7 +93,9 @@ def dsidFactory(uname, passwd): #can also be a regular DSID with AuthToken
             if e.code == 401:
                 return "HTTP Error 401: Unauthorized. Are you sure the credentials are correct?"
             elif e.code == 409:
-                return "HTTP Error 409: Conflict. 2 Factor Authentication appears to be enabled. You cannot use this script unless you get the your MMeAuthToken (generated either on your computer or your phone)."
+                return "HTTP Error 409: Conflict. 2 Factor Authentication appears to be enabled. You cannot use this script unless you get your MMeAuthToken manually (generated either on your PC/Mac or on your iOS device)."
+            elif e.code == 404:
+                return "HTTP Error 404: URL not found. Did you enter a username?"
             else:
                 return "HTTP Error %s.\n" % e.code
         else:
@@ -142,8 +144,7 @@ def fmiSetLoc(DSID, mmeFMIToken, UDID, latitude, longitude):
         else:
             print e
             raise HTTPError
-    else:
-        return "Successfully changed FindMyiPhone location to <%s;%s>!" % (latitude, longitude)
+    return "Successfully changed FindMyiPhone location to <%s;%s>!" % (latitude, longitude)
     
 def fmfSetLoc(DSID, mmeFMFAppToken, UDID, latitude, longitude): #we need UDID. apple does not appear to store this information, so for now, we have to do it automatically.
     mmeFMFAppTokenEncoded = base64.b64encode("%s:%s" % (DSID, mmeFMFAppToken))
@@ -190,8 +191,7 @@ def fmfSetLoc(DSID, mmeFMFAppToken, UDID, latitude, longitude): #we need UDID. a
         else:
             print e
             raise HTTPError
-    else:
-        return "Successfully changed FindMyFriends location to <%s;%s>!" % (latitude, longitude)
+    return "Successfully changed FindMyFriends location to <%s;%s>!" % (latitude, longitude)
 
 if __name__ == '__main__':
     while True:
