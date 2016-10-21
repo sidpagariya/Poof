@@ -33,6 +33,6 @@ If you enter an invalid UDID, poof will not be able to verify if the location ha
 
 Future features: 
 - [ ] Find the UDID of all devices linked to the iCloud account 
-- [ ] Find Friends of Friends - Basically the same as FMF, but this will find the friends of any iCloud account, with just a MMeAuthToken!
-- [ ] Confirm that the location has changed by making a request to iCloud to get the location of the device in question. This causes problems, however, if you pass in only your MMeAuthToken.
-- [ ] Pull old location from iCloud instead of IP address. See above note for possible issues with this.
+- [x] Find Friends of Friends - Basically the same as FMF, but this will find the friends of any iCloud account, with just a MMeAuthToken! *See FriendsOfFriends repo*
+- [x] Confirm that the location has changed by making a request to iCloud to get the location of the device in question. This causes problems, however, if you pass in only your MMeAuthToken. *User may notice that their device's locations are being requested. A design goal of POOF is to be 100% silent, so this feature will not be implemented*
+- [x] Pull old location from iCloud instead of IP address. See above note for possible issues with this. *See above note*
