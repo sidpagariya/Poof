@@ -12,22 +12,49 @@ Apple does not appear to store UDID information as of iOS 9, so currently, you h
 ---
 
 **Example**: *python poof.py* 
+```
+[INPUT]
 
-Username: johndoe@apple.com
+Would you like to use GPS coordinates [1] or a street address [2]: 2
 
-Password: secretPassword
+Apple ID: appleID
 
-Latitude: 40.7484
+Password: password
 
-Longitude: -73.9857
+Street address: Empire State Building 
 
-UDID: LongAndRandomUDID 
+City: NY
 
-Service Select: 2
+State: NY
 
-This example will spoof the location of device with the UDID "LongAndRandomUDID" on the iCloud account "johndoe@apple.com" to 40.7484° N, 73.9857° W, which are the coordinates of the Empire State Building, on both FMF and FMIP. 
+Got GPS coordinates <40.7484405:-73.9856644> for Empire State Building, NY, NY
 
-If you enter an invalid UDID, poof will not be able to verify if the location has been spoofed. So make sure that the UDID is valid.
+UDID: UDID of device that you want to spoof location of
+
+Spoof FMF, FMI, or both: [0, 1, 2] 2
+```
+```
+[OUTPUT]
+
+Successfully changed FindMyiPhone location to <40.7484405;-73.9856644>!
+
+Successfully changed FindMyFriends location to <40.7484405;-73.9856644>!
+
+Waiting 5 seconds to send FMI/FMF spoof again.
+
+^C
+
+Terminate signal received. Stopping spoof.
+
+Resetting location to approximate Wi-Fi AP latitude and longitude
+
+Successfully changed FindMyFriends location to <xx.xxxx;-xx.xxxx>!
+
+Successfully changed FindMyiPhone location to <xx.xxxx;-xx.xxxx>!
+
+Reset location to <xx.xxxx:-xx.xxx> based on IP xxx.xxx.xxx.xxx.
+```
+If you enter an invalid UDID, Poof will not be able to verify if the location has been spoofed (see below). So make sure that the UDID is valid.
 
 ---
 
