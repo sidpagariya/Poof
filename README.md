@@ -15,11 +15,13 @@ Apple does not appear to store UDID information as of iOS 9, so currently, you h
 ```
 [INPUT]
 
-Would you like to use GPS coordinates [1] or a street address [2]: 2
-
 Apple ID: appleID
 
 Password: password
+
+Got DSID/MMeAuthToken [******:*****************************]
+
+Would you like to use GPS coordinates [1] or a street address [2]: 2
 
 Street address: Empire State Building 
 
