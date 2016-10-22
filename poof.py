@@ -194,6 +194,19 @@ def fmfSetLoc(DSID, mmeFMFAppToken, UDID, latitude, longitude): #we need UDID. a
     return "Successfully changed FindMyFriends location to <%s;%s>!" % (latitude, longitude)
 
 if __name__ == '__main__':
+    user = raw_input("Apple ID: ")
+    try: #in the event we are supplied with an DSID, convert it to an int
+        int(user)
+        user = int(user)
+    except ValueError: #otherwise we have an apple id and can not convert
+        pass
+    passw = getpass.getpass()
+    try:
+        (DSID, authToken) = dsidFactory(user, passw)
+        print "Got DSID/MMeAuthToken [%s:%s]!" % (DSID, authToken)
+    except:
+        print "Error getting DSID and MMeAuthToken!\n%s" % dsidFactory(user, passw)
+        sys.exit()
     while True:
         try:
             arg = int(raw_input("Would you like to use GPS coordinates [1] or a street address [2]: "))
@@ -203,13 +216,6 @@ if __name__ == '__main__':
         except ValueError:
             print "Please enter 1 or 2 (GPS coordinates, or street address)"
             continue
-    user = raw_input("Apple ID: ")
-    try: #in the event we are supplied with an DSID, convert it to an int
-        int(user)
-        user = int(user)
-    except ValueError: #otherwise we have an apple id and can not convert
-        pass
-    passw = getpass.getpass()
     latitude, longitude, street, city, state = (None, None, None, None, None)
     if arg == 1:
         latitude = raw_input("Latitude: ")
@@ -233,11 +239,6 @@ if __name__ == '__main__':
         except ValueError:
             print "Please enter 0, 1 or 2 (FMF, FMI, or both, respectively)"
             continue
-    try:
-        (DSID, authToken) = dsidFactory(user, passw)
-    except:
-        print "Error getting DSID and MMeAuthToken!\n%s" % dsidFactory(user, passw)
-        sys.exit()
 
     try:
         mmeFMFAppToken, mmeFMIToken = tokenFactory(DSID, authToken) #get tokens by using token.
