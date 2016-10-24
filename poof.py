@@ -8,47 +8,34 @@ import traceback
 import json
 import time
 
-def convertAddress(street, city, state):
-    street = street.replace(" ", "+") #replace all spaces with a +
-    city = city.replace(" ", "+")
-    url = "http://maps.google.com/maps/api/geocode/json?address=%s,+%s+%s" % (street, city, state)
+def getUDID(dsid, mmeFMFAppToken):
+    url = 'https://p04-fmfmobile.icloud.com/fmipservice/friends/%s/1/maxCallback/refreshClient' % dsid
     headers = {
-        'Content-Type': 'application/json',
+        'Authorization': 'Basic %s' % base64.b64encode("%s:%s" % (dsid, mmeFMFAppToken)),#FMF APP TOKEN
+        'Content-Type': 'application/json; charset=utf-8',
     }
-    request = urllib2.Request(url, None, headers)
-    response = None
-    try:
-        response = urllib2.urlopen(request)
-    except urllib2.HTTPError as e:
-        if e.code != 200:
-            return "HTTP Error: %s" % e.code
-        else:
-            print e
-            raise HTTPError
-    coords = json.loads(response.read())["results"][0]["geometry"]["location"]
-    return (coords["lat"], coords["lng"])
-
-def resetLocation(self):
-    url = "http://freegeoip.net/json/"
-    headers = {
-        'Content-Type': 'application/json',
+    data = {
+        "clientContext": {
+            "appVersion": "5.0" #critical for getting appropriate config / time apparently.
+        }
     }
-    request = urllib2.Request(url, None, headers)
-    response = None
+    jsonData = json.dumps(data)
+    request = urllib2.Request(url, jsonData, headers)
+    i = 0
+    while 1:
+        try:
+            response = urllib2.urlopen(request)
+            break
+        except: #for some reason this exception needs to be caught a bunch of times before the request is made.
+            i +=1
+            continue
+    x = json.loads(response.read())
     try:
-        response = urllib2.urlopen(request)
-    except urllib2.HTTPError as e:
-        if e.code != 200:
-            return "HTTP Error: %s" % e.code
-        else:
-            print e
-            raise HTTPError
-    geoIP = json.loads(response.read())
-    try:
-        (latitude, longitude, IP) = (geoIP["latitude"], geoIP["longitude"], geoIP["ip"])
-        return (latitude, longitude, IP)
-    except Exception as e:
-        return ("Error resetting location: %s" % e, 0, 0)
+        UDID = base64.b64decode(x["devices"][0]["id"].replace("~", "="))
+    except Exception, e:
+        #if we get any error, the user will have to manually confirm their UDID
+        UDID = (False, False)
+    return (UDID, x["devices"][0]["name"])
 
 def tokenFactory(dsid, mmeAuthToken):
     mmeAuthTokenEncoded = base64.b64encode("%s:%s" % (dsid, mmeAuthToken))
@@ -105,6 +92,26 @@ def dsidFactory(uname, passwd): #can also be a regular DSID with AuthToken
     DSID = int(plistlib.readPlistFromString(content)["appleAccountInfo"]["dsPrsID"]) #stitch our own auth DSID
     mmeAuthToken = plistlib.readPlistFromString(content)["tokens"]["mmeAuthToken"] #stitch with token
     return (DSID, mmeAuthToken)
+
+def convertAddress(street, city, state):
+    street = street.replace(" ", "+") #replace all spaces with a +
+    city = city.replace(" ", "+")
+    url = "http://maps.google.com/maps/api/geocode/json?address=%s,+%s+%s" % (street, city, state)
+    headers = {
+        'Content-Type': 'application/json',
+    }
+    request = urllib2.Request(url, None, headers)
+    response = None
+    try:
+        response = urllib2.urlopen(request)
+    except urllib2.HTTPError as e:
+        if e.code != 200:
+            return "HTTP Error: %s" % e.code
+        else:
+            print e
+            raise HTTPError
+    coords = json.loads(response.read())["results"][0]["geometry"]["location"]
+    return (coords["lat"], coords["lng"])
 
 def fmiSetLoc(DSID, mmeFMIToken, UDID, latitude, longitude):
     mmeFMITokenEncoded = base64.b64encode("%s:%s" % (DSID, mmeFMIToken))
@@ -203,7 +210,8 @@ if __name__ == '__main__':
     passw = getpass.getpass()
     try:
         (DSID, authToken) = dsidFactory(user, passw)
-        print "Got DSID/MMeAuthToken [%s:%s]!" % (DSID, authToken)
+        #print "Got DSID/MMeAuthToken [%s:%s]!" % (DSID, authToken) uncomment this if you want to see DSID and token
+        print "Successfully authenticated to iCloud!"
     except:
         print "Error getting DSID and MMeAuthToken!\n%s" % dsidFactory(user, passw)
         sys.exit()
@@ -226,10 +234,7 @@ if __name__ == '__main__':
         state = raw_input("State: ")
         (latitude, longitude) = convertAddress(street, city, state)
         print "Got GPS coordinates <%s:%s> for %s, %s, %s" % (latitude, longitude, street, city, state)
-    #if not latitude or not longitude:
-    #    latitude = raw_input("Latitude: ")
-    #    longitude = raw_input("Longitude: ")
-    UDID = raw_input("UDID: ")
+
     while True:
         try:
             serviceSelect = int(raw_input("Spoof FMF, FMI, or both: [0, 1, 2] "))
@@ -246,6 +251,19 @@ if __name__ == '__main__':
         print "Error getting FMF/FMI tokens!\n%s" % e #0 is the FMFAppToken
         traceback.print_exc()
         sys.exit()
+    print "Attempting to find UDID's for devices on account."
+    UDID = getUDID(DSID, mmeFMFAppToken)
+    if UDID[0] != False:
+        print "Found UDID [%s] for device [%s]!" % (UDID[0], UDID[1])
+        confirm = raw_input("Do you want to spoof this device? [y/n] ")
+        if confirm == "y" or confirm == "Y" or confirm == "yes" or confirm == "Yes":
+            UDID = UDID[0]
+        else:
+            UDID = raw_input("Okay, enter UDID manually: ")
+
+    else:
+        print "Could not get UDID for any device"
+        UDID = raw_input("UDID: ")
 
     try:
         while True:
@@ -268,22 +286,7 @@ if __name__ == '__main__':
                 sys.exit()
     except KeyboardInterrupt:
         print "Terminate signal received. Stopping spoof."
-        print "Resetting location to approximate Wi-Fi AP latitude and longitude"
-        try:
-            (latitude, longitude, IP) = resetLocation("")
-            if serviceSelect == 0: #do both
-                print fmfSetLoc(DSID, mmeFMFAppToken, UDID, latitude, longitude)
-                print "Reset location to <%s:%s> based on IP %s." % (latitude, longitude, IP)
-            elif serviceSelect == 1:
-                print fmiSetLoc(DSID, mmeFMIToken, UDID, latitude, longitude)
-                print "Reset location to <%s:%s> based on IP %s." % (latitude, longitude, IP)
-            else:
-                print fmfSetLoc(DSID, mmeFMFAppToken, UDID, latitude, longitude)
-                print fmiSetLoc(DSID, mmeFMIToken, UDID, latitude, longitude)
-                print "Reset location to <%s:%s> based on IP %s." % (latitude, longitude, IP)
-            sys.exit()
-        except Exception as e:
-            print "Error resetting location.\n%s\n" % e
+        print "Spoof stopped."
     except Exception as e:
         print e
         print traceback.print_exc()
