@@ -7,6 +7,9 @@ import plistlib
 import traceback
 import json
 import time
+import ssl
+
+ssl._create_default_https_context = ssl._create_unverified_context
 
 def getUDID(dsid, mmeFMFAppToken):
     url = 'https://p04-fmfmobile.icloud.com/fmipservice/friends/%s/1/maxCallback/refreshClient' % dsid
@@ -271,16 +274,16 @@ if __name__ == '__main__':
                 if serviceSelect == 0: #do both
                     print fmfSetLoc(DSID, mmeFMFAppToken, UDID, latitude, longitude)
                     print "Waiting 5 seconds to send FMF spoof again."
-                    time.sleep(5)
+                    time.sleep(1)
                 elif serviceSelect == 1: #wants FMI
                     print fmiSetLoc(DSID, mmeFMIToken, UDID, latitude, longitude)
                     print "Waiting 5 seconds to send FMI spoof again."
-                    time.sleep(5)
+                    time.sleep(1)
                 else: #serviceSelect is 2, wants both.
                     print fmiSetLoc(DSID, mmeFMIToken, UDID, latitude, longitude)
                     print fmfSetLoc(DSID, mmeFMFAppToken, UDID, latitude, longitude)
                     print "Waiting 5 seconds to send FMI/FMF spoof again."
-                    time.sleep(5) #wait 5 seconds before going again.
+                    time.sleep(1) #wait 5 seconds before going again.
             else:
                 print "Service select must have a value of 0, 1, or 2."
                 sys.exit()
